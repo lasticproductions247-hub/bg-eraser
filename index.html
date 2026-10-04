@@ -76,6 +76,49 @@
     .model-btn:disabled{opacity:.35;cursor:not-allowed}
     .model-btn .sz{opacity:.65;font-weight:500}
     .cache-note{margin-top:12px;font-size:11px;color:#4A4A60;font-family:ui-monospace,monospace}
+    /* ---------- welcome / preloader ---------- */
+    .welcome{position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;
+        padding:24px;overflow:hidden;transition:opacity .6s ease,visibility .6s ease}
+    .welcome.gone{opacity:0;visibility:hidden;pointer-events:none}
+    .welcome-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+    .welcome-inner{position:relative;z-index:1;width:100%;max-width:460px;text-align:center;
+        animation:welcomeIn .8s cubic-bezier(.16,1,.3,1) both}
+    @keyframes welcomeIn{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
+    .welcome-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+        background:rgba(232,85,58,.1);border:1px solid rgba(232,85,58,.22);color:#FB923C;
+        font-size:10.5px;font-weight:600;letter-spacing:.14em;margin-bottom:22px}
+    .welcome-badge i{font-size:10px}
+    .welcome-title{font-size:clamp(3rem,11vw,5.5rem);font-weight:700;letter-spacing:-.04em;line-height:.9;
+        background:linear-gradient(180deg,#F0F0F5 30%,#7C7C96);-webkit-background-clip:text;
+        background-clip:text;color:transparent;margin-bottom:14px}
+    .welcome-sub{font-size:15px;color:var(--muted);max-width:34ch;margin:0 auto 26px;line-height:1.6}
+    .welcome-models{display:flex;gap:10px;justify-content:center;margin-bottom:26px}
+    .wmodel{flex:1;max-width:170px;background:rgba(22,22,29,.6);border:1px solid var(--border);
+        border-radius:14px;padding:13px 10px;cursor:pointer;transition:.2s;font-family:inherit;
+        display:flex;flex-direction:column;gap:3px;align-items:center;color:var(--muted)}
+    .wmodel:hover:not(:disabled){border-color:var(--muted);color:var(--fg)}
+    .wmodel.on{background:rgba(232,85,58,.12);border-color:var(--accent);color:var(--fg)}
+    .wmodel:disabled{opacity:.5;cursor:progress}
+    .wm-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+    .wm-size{font-size:10.5px;opacity:.7;font-variant-numeric:tabular-nums}
+    .welcome-status{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;
+        font-size:11px;color:var(--muted);font-family:ui-monospace,monospace}
+    .wstat-pct{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:600}
+    .welcome-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:24px}
+    .welcome-bar-fill{height:100%;width:0%;border-radius:2px;
+        background:linear-gradient(90deg,var(--accent),#FB923C);transition:width .3s ease}
+    .welcome-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;
+        padding:16px 26px;border-radius:14px;border:0;cursor:pointer;font-family:inherit;
+        font-size:14px;font-weight:700;letter-spacing:.06em;color:#fff;
+        background:linear-gradient(135deg,#E8553A,#B8341E);transition:.22s;
+        box-shadow:0 8px 28px rgba(232,85,58,.22)}
+    .welcome-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 34px rgba(232,85,58,.34)}
+    .welcome-btn:disabled{opacity:.55;cursor:progress;transform:none}
+    .welcome-btn.ready{animation:readyPulse 2.4s ease-in-out infinite}
+    @keyframes readyPulse{0%,100%{box-shadow:0 8px 28px rgba(232,85,58,.22)}50%{box-shadow:0 8px 40px rgba(232,85,58,.5)}}
+    .welcome-hint{margin-top:14px;font-size:11.5px;color:#4A4A60}
+    .welcome-hint kbd{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+    @media(prefers-reduced-motion:reduce){.welcome-inner{animation:none}.welcome-btn.ready{animation:none}}
     kbd{font-family:ui-monospace,monospace}
     ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
     @media(prefers-reduced-motion:reduce){.orb,.spin{animation:none}*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
@@ -133,7 +176,7 @@
                         <button class="model-btn on" id="btnModnet" data-model="Xenova/modnet">MODNet <span class="sz">&middot; 6.6 MB &middot; fast</span></button>
                         <button class="model-btn" id="btnRmbg" data-model="briaai/RMBG-1.4">RMBG-1.4 <span class="sz">&middot; 44 MB &middot; sharper</span></button>
                     </div>
-                    <p class="cache-note" id="cacheNote">Model downloads once, then is cached by your browser for offline reuse.</p>
+                    <p class="cache-note" id="cacheNote">Downloading in the background — pick a model above to switch.</p>
                 </div>
 
                 <div class="text-center mt-6 text-xs" style="color:#44445A">
@@ -155,7 +198,7 @@
                     <div class="mb-5 rounded-xl p-3" style="background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.18)">
                         <p class="text-[11px] flex items-start gap-2" style="color:#5EEAD4">
                             <i class="fas fa-shield-halved mt-0.5"></i>
-                            <span>First run downloads the model (6.6&ndash;44 MB depending on your choice). This is cached by your browser &mdash; every later image is instant and works fully offline.</span>
+                            <span>The model downloads as soon as this page opens, so it's usually ready before you pick a photo. Cached afterwards &mdash; works fully offline.</span>
                         </p>
                     </div>
 
@@ -207,6 +250,42 @@
         Runs entirely on your device via <strong style="color:var(--muted)">ONNX Runtime Web</strong> &mdash; no uploads, no servers
     </footer>
     <div id="toastBox"></div>
+
+    <!-- ================= WELCOME / PRELOADER ================= -->
+    <div class="welcome" id="welcome">
+        <canvas class="welcome-canvas" id="welcomeCanvas" aria-hidden="true"></canvas>
+        <div class="welcome-inner">
+            <div class="welcome-badge">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>100% ON-DEVICE &middot; NO UPLOAD</span>
+            </div>
+            <h1 class="welcome-title">BG&nbsp;Eraser</h1>
+            <p class="welcome-sub">Real AI background removal that runs entirely in your browser.</p>
+
+            <div class="welcome-models">
+                <button class="wmodel on" id="wModnet" data-model="Xenova/modnet">
+                    <span class="wm-name">MODNet</span>
+                    <span class="wm-size">6.6 MB</span>
+                </button>
+                <button class="wmodel" id="wRmbg" data-model="briaai/RMBG-1.4">
+                    <span class="wm-name">RMBG-1.4</span>
+                    <span class="wm-size">44 MB</span>
+                </button>
+            </div>
+
+            <div class="welcome-status" id="welcomeStatus">
+                <span class="wstat-label" id="wstatLabel">Ready</span>
+                <span class="wstat-pct" id="wstatPct"></span>
+            </div>
+            <div class="welcome-bar"><div class="welcome-bar-fill" id="welcomeBar"></div></div>
+
+            <button class="welcome-btn" id="welcomeBtn">
+                <span id="welcomeBtnLabel">Enter</span>
+                <i class="fas fa-arrow-right" id="welcomeBtnIcon"></i>
+            </button>
+            <p class="welcome-hint" id="welcomeHint">Press <kbd>Enter</kbd> or click to begin</p>
+        </div>
+    </div>
 
     <script type="module">
         /* ============================================================
@@ -280,6 +359,15 @@
                         if (p.status === 'progress' && p.total) {
                             const pct = (p.loaded / p.total) * 100;
                             const mb = (p.loaded / 1048576).toFixed(1);
+                            // Mirror into the welcome bar if it's still on screen,
+                            // so the user watches real bytes arrive.
+                            if (warmState === 'loading') {
+                                const mbTotal = (p.total / 1048576).toFixed(1);
+                                setWarm('loading',
+                                    'Downloading ' + (p.file || 'model').split('/').pop() + ' · ' +
+                                    mb + ' / ' + mbTotal + ' MB',
+                                    pct);
+                            }
                             setProgress(6 + (pct * 0.54), 'Downloading ' + p.file + ' — ' + mb + ' MB (' + Math.round(pct) + '%)');
                         } else if (p.status === 'ready') {
                             setProgress(62, 'Model ready.');
@@ -568,13 +656,175 @@
                 chosenModel = btn.dataset.model;
                 // if a different model was already loaded, drop it so the next run reloads
                 if (segmenter && segmenterModel !== chosenModel) { segmenter = null; segmenterModel = null; segmenterPromise = null; }
+                // keep the welcome-screen picker in sync with this one
+                document.querySelectorAll('.wmodel').forEach(b => {
+                    b.classList.toggle('on', b.dataset.model === chosenModel);
+                });
             });
         });
 
         /* ============================================================
-           Init
+           Welcome / preloader
+           The model download starts HERE, on page load — not when the
+           user clicks Enter and not when they pick a photo. By the time
+           they choose an image the weights are usually already cached,
+           so the develop step is instant.
            ============================================================ */
+        const W = {
+            root: $('welcome'),
+            bar: $('welcomeBar'),
+            label: $('wstatLabel'),
+            pct: $('wstatPct'),
+            btn: $('welcomeBtn'),
+            btnLabel: $('welcomeBtnLabel'),
+            hint: $('welcomeHint'),
+            canvas: $('welcomeCanvas')
+        };
+        let warmState = 'idle';   // idle | loading | ready | error
+        let warmStartedAt = 0;
+
+        function setWarm(state, label, pct) {
+            warmState = state;
+            if (label !== undefined) W.label.textContent = label;
+            W.pct.textContent = pct === undefined || pct === null ? '' : Math.round(pct) + '%';
+            if (pct !== undefined && pct !== null) {
+                W.bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+            }
+            if (state === 'ready') {
+                W.btn.disabled = false;
+                W.btn.classList.add('ready');
+                W.btnLabel.textContent = 'Enter';
+                W.hint.innerHTML = 'Model ready &mdash; press <kbd>Enter</kbd> or click';
+                document.querySelectorAll('.wmodel').forEach(b => { b.disabled = false; });
+            } else if (state === 'loading') {
+                W.btn.disabled = true;
+                W.btn.classList.remove('ready');
+                W.btnLabel.textContent = 'Loading…';
+                W.hint.textContent = 'Downloading the model in the background';
+                document.querySelectorAll('.wmodel').forEach(b => { b.disabled = true; });
+            } else if (state === 'error') {
+                W.btn.disabled = false;
+                W.btn.classList.remove('ready');
+                W.btnLabel.textContent = 'Continue anyway';
+                W.hint.textContent = 'Download failed — you can retry when processing';
+                document.querySelectorAll('.wmodel').forEach(b => { b.disabled = false; });
+            }
+        }
+
+        /* Particle field for the welcome background */
+        function initWelcomeCanvas() {
+            if (!W.canvas) return;
+            const c = W.canvas, ctx = c.getContext('2d');
+            let w = 0, h = 0, parts = [];
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            function resize() {
+                w = c.width = c.offsetWidth;
+                h = c.height = c.offsetHeight;
+                const n = Math.min(70, Math.round(w * h / 26000));
+                parts = Array.from({ length: n }, () => ({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    r: Math.random() * 1.6 + 0.4,
+                    vx: (Math.random() - 0.5) * 0.22,
+                    vy: -(Math.random() * 0.28 + 0.05),
+                    a: Math.random() * 0.4 + 0.12
+                }));
+            }
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                for (const p of parts) {
+                    if (!reduce) {
+                        p.x += p.vx; p.y += p.vy;
+                        if (p.y < -8) { p.y = h + 8; p.x = Math.random() * w; }
+                        if (p.x < -8) p.x = w + 8;
+                        if (p.x > w + 8) p.x = -8;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(232,85,58,' + p.a + ')';
+                    ctx.fill();
+                }
+                if (!reduce) requestAnimationFrame(draw);
+            }
+            resize();
+            draw();
+            window.addEventListener('resize', resize);
+        }
+
+        /* Kick the download off as early as possible. */
+        async function warmModel() {
+            if (warmState === 'loading' || warmState === 'ready') return;
+            warmStartedAt = Date.now();
+            setWarm('loading', 'Starting download…', 0);
+            try {
+                await ensureLibs();
+                await getPipeline(chosenModel);
+                const secs = ((Date.now() - warmStartedAt) / 1000).toFixed(1);
+                setWarm('ready', 'Model ready · ' + secs + 's', 100);
+                toast('Model ready in ' + secs + 's — your images stay on this device.', 'ok');
+                // reflect the choice on the upload screen picker too
+                document.querySelectorAll('.model-btn').forEach(b => {
+                    b.classList.toggle('on', b.dataset.model === chosenModel);
+                });
+                const note = $('cacheNote');
+                if (note) note.textContent = chosenModel.split('/').pop() + ' ready · cached for next time';
+            } catch (err) {
+                console.error('Warm-up failed:', err);
+                setWarm('error', 'Download failed', null);
+            }
+        }
+
+        function dismissWelcome() {
+            if (!W.root || W.root.classList.contains('gone')) return;
+            W.root.classList.add('gone');
+            setTimeout(() => { W.root.style.display = 'none'; }, 620);
+            showView('upload');
+        }
+
+        function wireWelcome() {
+            initWelcomeCanvas();
+            setWarm('idle', 'Ready', 0);
+
+            // Enter / Space / click all start or continue.
+            const act = () => {
+                if (warmState === 'ready') { dismissWelcome(); return; }
+                if (warmState === 'error') { dismissWelcome(); return; }
+                warmModel();
+            };
+            W.btn.addEventListener('click', act);
+
+            document.addEventListener('keydown', e => {
+                if (W.root.classList.contains('gone')) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    // don't hijack keys aimed at another control
+                    const tag = (document.activeElement && document.activeElement.tagName) || '';
+                    if (tag === 'BUTTON' && document.activeElement !== W.btn) return;
+                    e.preventDefault();
+                    act();
+                }
+            });
+
+            // Model choice here also drives the picker on the upload screen.
+            document.querySelectorAll('.wmodel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (warmState === 'loading') return;
+                    document.querySelectorAll('.wmodel').forEach(b => b.classList.remove('on'));
+                    btn.classList.add('on');
+                    chosenModel = btn.dataset.model;
+                    if (segmenter && segmenterModel !== chosenModel) {
+                        segmenter = null; segmenterModel = null; segmenterPromise = null;
+                    }
+                    if (warmState === 'ready') warmModel();   // preload the new choice
+                });
+            });
+        }
+        wireWelcome();
         showView('upload');
+
+        // Start fetching the model IMMEDIATELY — in parallel with the user
+        // reading the welcome screen. This is what removes the wait later.
+        warmModel();
     </script>
 </body>
 </html>
