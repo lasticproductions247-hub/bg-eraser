@@ -490,24 +490,56 @@
 
             if (cancelled) throw new Error('Cancelled');
 
-            // RawImage -> canvas -> PNG blob
-            const w = out.width || out.dims?.[2];
-            const h = out.height || out.dims?.[1];
-            const data = out.data instanceof Uint8Array ? out.data : new Uint8Array(out.data);
-
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            const idata = new ImageData(new Uint8ClampedArray(data.buffer, data.byteOffset, data.length), w, h);
-            ctx.putImageData(idata, 0, 0);
+            // RawImage already carries width/height/channels/data and knows how
+            // to encode itself. Use its own toBlob() instead of rebuilding an
+            // ImageData by hand: the manual path threw IndexSizeError whenever
+            // the channel count wasn't exactly 4, because the width/height
+            // lookup assumed a dims layout RawImage doesn't use.
+            if (!out || typeof out.toBlob !== 'function') {
+                throw new Error('The model returned an unexpected result — please try again, or switch model.');
+            }
 
             setProgress(94, 'Encoding PNG...');
             await sleep(20);
-            const blob = await canvasToBlob(canvas);
+
+            // Flatten to RGBA so the PNG definitely carries an alpha channel.
+            // RawImage.rgba() only understands 1, 3 and 4 channels, so widen any
+            // other channel count ourselves. The destination buffer is allocated
+            // at w*h*4 — reusing the source buffer would hand ImageData a length
+            // that doesn't match its declared dimensions.
+            let rgba = out;
+            if (out.channels !== 4) {
+                if (out.channels === 1 || out.channels === 3) {
+                    rgba = out.rgba();
+                } else {
+                    const px = out.width * out.height;
+                    const s = out.data;
+                    const dst = new Uint8ClampedArray(px * 4);
+                    if (out.channels === 2) {
+                        // luminance + alpha: replicate luminance into R, G and B
+                        for (let i = 0, o = 0; i < px; i++, o += 4) {
+                            dst[o] = s[i * 2]; dst[o + 1] = s[i * 2];
+                            dst[o + 2] = s[i * 2]; dst[o + 3] = s[i * 2 + 1];
+                        }
+                    } else {
+                        // unusual channel count: use the first band as greyscale
+                        for (let i = 0, o = 0; i < px; i++, o += 4) {
+                            dst[o] = s[i]; dst[o + 1] = s[i];
+                            dst[o + 2] = s[i]; dst[o + 3] = 255;
+                        }
+                    }
+                    rgba = new t.RawImage(dst, out.width, out.height, 4);
+                }
+            }
+            const blob = await rgba.toBlob('image/png');
+
+            if (!blob || blob.size < 100) {
+                throw new Error('Result image came out empty — please try a different image.');
+            }
             return blob;
         }
 
-        /* ============================================================
+    /* ============================================================
            Main flow
            ============================================================ */
         async function processImage(file) {
