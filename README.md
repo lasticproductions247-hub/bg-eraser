@@ -39,8 +39,11 @@ So this version runs the model **on your machine**:
 
 | Model | Size | Character |
 |---|---|---|
-| **MODNet** (default) | ~25 MB | Fast, good on most subjects |
-| **RMBG-1.4** | ~44 MB | Sharper edges, better on hair/fur |
+| **MODNet** (default) | 6.6 MB | Fast, good on most subjects |
+| **RMBG-1.4** | 44 MB | Sharper edges, better on hair/fur |
+
+Measured from the actual `onnx/model_quantized.onnx` weights each repo's config
+selects (dtype `q8`); both were downloaded and confirmed to be valid ONNX.
 
 Both are grabbed straight from the Hub and cached by the browser.
 

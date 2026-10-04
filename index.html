@@ -130,8 +130,8 @@
                 <div class="text-center mt-7">
                     <p class="text-xs mb-3" style="color:#55556A">Choose a model &mdash; both run locally</p>
                     <div class="model-pick" style="margin-top:0">
-                        <button class="model-btn on" id="btnModnet" data-model="Xenova/modnet">MODNet <span class="sz">&middot; ~25 MB &middot; fast</span></button>
-                        <button class="model-btn" id="btnRmbg" data-model="briaai/RMBG-1.4">RMBG-1.4 <span class="sz">&middot; ~44 MB &middot; sharper</span></button>
+                        <button class="model-btn on" id="btnModnet" data-model="Xenova/modnet">MODNet <span class="sz">&middot; 6.6 MB &middot; fast</span></button>
+                        <button class="model-btn" id="btnRmbg" data-model="briaai/RMBG-1.4">RMBG-1.4 <span class="sz">&middot; 44 MB &middot; sharper</span></button>
                     </div>
                     <p class="cache-note" id="cacheNote">Model downloads once, then is cached by your browser for offline reuse.</p>
                 </div>
@@ -155,7 +155,7 @@
                     <div class="mb-5 rounded-xl p-3" style="background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.18)">
                         <p class="text-[11px] flex items-start gap-2" style="color:#5EEAD4">
                             <i class="fas fa-shield-halved mt-0.5"></i>
-                            <span>First run downloads the model (~25&ndash;44 MB). This is cached by your browser &mdash; every later image is instant and works fully offline.</span>
+                            <span>First run downloads the model (6.6&ndash;44 MB depending on your choice). This is cached by your browser &mdash; every later image is instant and works fully offline.</span>
                         </p>
                     </div>
 
@@ -226,11 +226,12 @@
 
         let resultBlob = null, resultUrl = null, originalUrl = null;
 
-        /* Models: MODNet is small/fast, RMBG-1.4 is heavier/sharper.
-           Both are public on the Hub — no token required. */
+        /* Models: both are public on the Hub — no token required.
+           Sizes are the actual onnx/model_quantized.onnx weights that
+           transformers.js fetches (dtype q8 from each repo's config). */
         const MODELS = {
-            'Xenova/modnet':      { label: 'MODNet',   size: '~25 MB' },
-            'briaai/RMBG-1.4':    { label: 'RMBG-1.4', size: '~44 MB' }
+            'Xenova/modnet':   { label: 'MODNet',   size: '~6.6 MB' },
+            'briaai/RMBG-1.4': { label: 'RMBG-1.4', size: '~44 MB' }
         };
         let chosenModel = 'Xenova/modnet';
 
@@ -240,7 +241,7 @@
         async function ensureLibs() {
             if (ort) return;
             setStep(1, 'active');
-            setProgress(3, 'Fetching AI runtime (~10 MB)...');
+            setProgress(3, 'Fetching AI runtime...');
             const t = await import(
                 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6'
             );
