@@ -219,8 +219,9 @@
         const sleep = ms => new Promise(r => setTimeout(r, ms));
 
         let ort = null;         // ONNX Runtime module (lazy-loaded)
-        let pipe = null;        // loaded segmenter pipeline
-        let pipeModel = null;   // which model the pipeline holds
+        let segmenter = null;      // loaded segmentation pipeline
+        let segmenterModel = null; // which model the pipeline holds
+        let segmenterPromise = null; // in-flight load, so we never double-download
         let cancelled = false;
         let isProcessing = false;
 
@@ -255,30 +256,50 @@
            Load the segmentation pipeline (cached after first run)
            ============================================================ */
         async function getPipeline(modelId, onStatus) {
-            if (pipe && pipeModel === modelId) return pipe;
+            // Cached already? Reuse it.
+            if (segmenter && segmenterModel === modelId) return segmenter;
+            // A load for this model is already in flight? Await the same promise
+            // so a second caller never triggers a duplicate download.
+            if (segmenterPromise && segmenterModel === modelId) return segmenterPromise;
 
             setStep(1, 'active');
             setProgress(6, 'Loading ' + MODELS[modelId].label + ' model (' + MODELS[modelId].size + ')...');
+            segmenterModel = modelId;
 
-            const t = await import(
-                'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6'
-            );
+            // NOTE: no inner `const segmenter` here on purpose — a same-named
+            // local would shadow the outer binding and make the cache check
+            // above throw "Cannot access 'segmenter' before initialization".
+            segmenterPromise = (async () => {
+                const t = await import(
+                    'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6'
+                );
 
-            // progress_callback gives us real download percentages
-            const pipe = await t.pipeline('background-removal', modelId, {
-                progress_callback: p => {
-                    if (p.status === 'progress' && p.total) {
-                        const pct = (p.loaded / p.total) * 100;
-                        const mb = (p.loaded / 1048576).toFixed(1);
-                        setProgress(6 + (pct * 0.54), 'Downloading ' + p.file + ' — ' + mb + ' MB (' + Math.round(pct) + '%)');
-                    } else if (p.status === 'ready') {
-                        setProgress(62, 'Model ready.');
+                // progress_callback gives us real download percentages
+                const built = await t.pipeline('background-removal', modelId, {
+                    progress_callback: p => {
+                        if (p.status === 'progress' && p.total) {
+                            const pct = (p.loaded / p.total) * 100;
+                            const mb = (p.loaded / 1048576).toFixed(1);
+                            setProgress(6 + (pct * 0.54), 'Downloading ' + p.file + ' — ' + mb + ' MB (' + Math.round(pct) + '%)');
+                        } else if (p.status === 'ready') {
+                            setProgress(62, 'Model ready.');
+                        }
                     }
-                }
-            });
+                });
+                return built;
+            })();
 
-            pipeModel = modelId;
-            return pipe;
+            try {
+                segmenter = await segmenterPromise;
+                return segmenter;
+            } catch (err) {
+                // Let the next attempt retry from scratch.
+                segmenterPromise = null;
+                segmenterModel = null;
+                throw err;
+            } finally {
+                segmenterPromise = null;
+            }
         }
 
         /* ============================================================
@@ -546,7 +567,7 @@
                 btn.classList.add('on');
                 chosenModel = btn.dataset.model;
                 // if a different model was already loaded, drop it so the next run reloads
-                if (pipe && pipeModel !== chosenModel) { pipe = null; pipeModel = null; }
+                if (segmenter && segmenterModel !== chosenModel) { segmenter = null; segmenterModel = null; segmenterPromise = null; }
             });
         });
 
