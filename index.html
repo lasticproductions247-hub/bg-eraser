@@ -495,8 +495,20 @@
             // ImageData by hand: the manual path threw IndexSizeError whenever
             // the channel count wasn't exactly 4, because the width/height
             // lookup assumed a dims layout RawImage doesn't use.
-            if (!out || typeof out.toBlob !== 'function') {
-                throw new Error('The model returned an unexpected result — please try again, or switch model.');
+            if (out && typeof out.toBlob !== 'function') {
+                // Some models (briaai/RMBG-1.4) return a bare tensor rather than a
+                // RawImage, so toBlob is missing and the old hard throw killed the
+                // run. Reshape whatever came back into a RawImage instead.
+                const w = out.width  || (out.dims && out.dims[out.dims.length - 1]);
+                const h = out.height || (out.dims && out.dims[out.dims.length - 2]);
+                const data = out.data || out;
+                const per = (w && h) ? (data.length / (w * h)) : 4;
+                const ch = (Number.isInteger(per) && per >= 1 && per <= 4) ? per : 4;
+                const RI = (await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6')).RawImage;
+                out = new RI(data, w, h, ch);
+            }
+            if (!out) {
+                throw new Error('The model returned nothing — please try another image.');
             }
 
             setProgress(94, 'Encoding PNG...');
